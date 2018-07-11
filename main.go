@@ -2,23 +2,29 @@ package main
 
 import (
 	"log"
+	"os"
 	"sync"
 	"time"
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+	"github.com/joho/godotenv"
 )
 
 func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 
-	//log.Println("Connecting to server...")
+	log.Println("Connecting to server...")
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	// Connect to server
-	c, err := client.DialTLS("imap.yandex.com:993", nil)
+	c, err := client.DialTLS(os.Getenv("IMAP_SERVER"), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//log.Println("Connected to server")
 
 	// Don't forget to logout
 	defer c.Logout()
@@ -26,7 +32,7 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 	defer wg.Done()
 
 	// Login
-	if err := c.Login("stuffsom", "some_password1"); err != nil {
+	if err := c.Login(os.Getenv("EMAIL"), os.Getenv("PASSWORD")); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Logged in")
@@ -41,7 +47,7 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(uint32(from), uint32(to))
 
-	log.Println("executing for seqset", seqset.String())
+	log.Println("Fetching emails from number", seqset.String())
 	err = c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
 	if err != nil {
 		log.Println(err)
