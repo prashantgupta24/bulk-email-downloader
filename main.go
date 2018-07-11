@@ -67,11 +67,13 @@ func main() {
 		log.Printf("Time taken %s", elapsed)
 	}()
 
-	const NumEmails = 500
-	for i := 1; i <= 2000; i = i + NumEmails {
+	const EmailsPerBatch = 500
+	const TotalEmails = 2000
+
+	for i := 1; i <= TotalEmails; i = i + EmailsPerBatch {
 		wg.Add(1)
 		m := make(chan *imap.Message)
-		go getEmails(m, &wg, i, i+(NumEmails-1))
+		go getEmails(m, &wg, i, i+(EmailsPerBatch-1))
 
 		go func(m chan *imap.Message) {
 			for msg := range m {
