@@ -29,7 +29,6 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 	// Don't forget to logout
 	defer c.Logout()
 	defer log.Println("Logging out")
-	defer wg.Done()
 
 	// Login
 	if err := c.Login(os.Getenv("EMAIL"), os.Getenv("PASSWORD")); err != nil {
@@ -73,6 +72,7 @@ func main() {
 	for i := 1; i <= TotalEmails; i = i + EmailsPerBatch {
 		wg.Add(1)
 		m := make(chan *imap.Message)
+
 		go getEmails(m, &wg, i, i+(EmailsPerBatch-1))
 
 		go func(m chan *imap.Message) {
@@ -80,6 +80,7 @@ func main() {
 				MessageMap.Store(msg.Envelope.Subject, 1)
 				NumEmailsRead++
 			}
+			wg.Done()
 		}(m)
 	}
 
