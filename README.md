@@ -1,5 +1,5 @@
 # Bulk-email-downloader
-A bulk email downloader from an IMAP server written in go. It downloads bulk emails from an `IMAP` server using go-routines.
+A bulk email downloader from an IMAP server written in go. It downloads bulk emails from an `IMAP` server using configurable number of go-routines. It saves them in an Array called `Messages`. 
 
 ### Example output
 
