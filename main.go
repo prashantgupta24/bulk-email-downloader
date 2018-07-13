@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
+	"net/mail"
 	"os"
 	"sync"
 	"time"
@@ -11,7 +13,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
+//Email message constructed
+type MessageStruct struct {
+	From, Subject, Body string
+}
+
+func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int, section *imap.BodySectionName) {
 
 	log.Println("Connecting to server...")
 
@@ -47,7 +54,7 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 	seqset.AddRange(uint32(from), uint32(to))
 
 	log.Println("Fetching emails from number", seqset.String())
-	err = c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+	err = c.Fetch(seqset, []imap.FetchItem{section.FetchItem()}, messages)
 	if err != nil {
 		log.Println(err)
 	}
@@ -55,13 +62,13 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int) {
 
 func main() {
 
-	var MessageMap sync.Map
+	var Messages []MessageStruct
 	var wg sync.WaitGroup
-	NumEmailsRead := 0
+	section := imap.BodySectionName{}
 
 	start := time.Now()
 	defer func() {
-		log.Printf("Read %v messages", NumEmailsRead)
+		log.Printf("Read %v messages", len(Messages))
 		elapsed := time.Since(start)
 		log.Printf("Time taken %s", elapsed)
 	}()
@@ -71,14 +78,32 @@ func main() {
 
 	for i := 1; i <= TotalEmails; i = i + EmailsPerBatch {
 		wg.Add(1)
-		m := make(chan *imap.Message)
+		MessageChan := make(chan *imap.Message)
 
-		go getEmails(m, &wg, i, i+(EmailsPerBatch-1))
+		go getEmails(MessageChan, &wg, i, i+(EmailsPerBatch-1), &section)
 
 		go func() {
-			for msg := range m {
-				MessageMap.Store(msg.Envelope.Subject, 1)
-				NumEmailsRead++
+			for RawMessage := range MessageChan {
+				r := RawMessage.GetBody(&section)
+				if r == nil {
+					log.Println("Server didn't return message body")
+				} else {
+					Message, err := mail.ReadMessage(r)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					header := Message.Header
+					body, err := ioutil.ReadAll(Message.Body)
+					if err != nil {
+						log.Fatal(err)
+					}
+					Messages = append(Messages, MessageStruct{
+						From:    header.Get("From"),
+						Subject: header.Get("Subject"),
+						Body:    string(body),
+					})
+				}
 			}
 			wg.Done()
 		}()
