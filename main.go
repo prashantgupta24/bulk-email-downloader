@@ -75,13 +75,13 @@ func main() {
 
 		go getEmails(m, &wg, i, i+(EmailsPerBatch-1))
 
-		go func(m chan *imap.Message) {
+		go func() {
 			for msg := range m {
 				MessageMap.Store(msg.Envelope.Subject, 1)
 				NumEmailsRead++
 			}
 			wg.Done()
-		}(m)
+		}()
 	}
 
 	wg.Wait()
