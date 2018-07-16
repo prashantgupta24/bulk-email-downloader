@@ -18,7 +18,7 @@ type MessageStruct struct {
 	From, Subject, Body string
 }
 
-func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int, section *imap.BodySectionName) {
+func getEmails(MessageChan chan *imap.Message, from, to int, section *imap.BodySectionName) {
 
 	log.Println("Connecting to server...")
 
@@ -54,7 +54,7 @@ func getEmails(messages chan *imap.Message, wg *sync.WaitGroup, from, to int, se
 	seqset.AddRange(uint32(from), uint32(to))
 
 	log.Println("Fetching emails from number", seqset.String())
-	err = c.Fetch(seqset, []imap.FetchItem{section.FetchItem()}, messages)
+	err = c.Fetch(seqset, []imap.FetchItem{section.FetchItem()}, MessageChan)
 	if err != nil {
 		log.Println(err)
 	}
@@ -80,7 +80,7 @@ func main() {
 		wg.Add(1)
 		MessageChan := make(chan *imap.Message)
 
-		go getEmails(MessageChan, &wg, i, i+(EmailsPerBatch-1), &section)
+		go getEmails(MessageChan, i, i+(EmailsPerBatch-1), &section)
 
 		go func() {
 			for RawMessage := range MessageChan {
@@ -108,6 +108,5 @@ func main() {
 			wg.Done()
 		}()
 	}
-
 	wg.Wait()
 }
