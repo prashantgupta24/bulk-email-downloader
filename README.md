@@ -10,6 +10,16 @@ EMAIL=
 PASSWORD=
 ```
 
+2 configurations determine the number of emails read per batch, and the total number of emails to be read
+
+Default values are:
+
+    const EmailsPerBatch = 500
+    const TotalEmails = 2000
+
+
+Feel free to change them as per your specifications.
+
 ### Example output
 
 ```
