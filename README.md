@@ -1,6 +1,15 @@
 # Bulk-email-downloader
 A bulk email downloader from an IMAP server written in go. It downloads bulk emails from an `IMAP` server using configurable number of go-routines. It saves them in an Array called `Messages`. 
 
+### Config
+
+Create a `.env` file in the same directory as the `main.go` file, and fill in the following properties:
+```
+IMAP_SERVER=
+EMAIL=
+PASSWORD=
+```
+
 ### Example output
 
 ```
